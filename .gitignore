@@ -1,0 +1,10 @@
+resources
+data
+env
+artifacts
+__pycache__
+.DS_Store
+.pytest_cache
+*.pyc
+!src/data/
+!src/data/*.py

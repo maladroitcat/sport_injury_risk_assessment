@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import numpy as np
 import torch
 from torchvision.models import ResNet50_Weights, resnet50

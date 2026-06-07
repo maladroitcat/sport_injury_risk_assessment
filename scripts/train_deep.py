@@ -17,6 +17,9 @@ from src.evaluation.metrics import compute_metrics, save_confusion_matrix, save_
 from src.models.deep_video import MeanPooledResNetHead
 
 
+LABEL_COLUMNS = [ID_TO_LABEL[idx] for idx in sorted(ID_TO_LABEL)]
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Train neural temporal head on frozen ResNet50 frame embeddings.")
     parser.add_argument("--metadata", default="data/metadata.csv")
@@ -38,7 +41,7 @@ def train_one_fold(
     X_val: np.ndarray,
     y_val: np.ndarray,
     args: argparse.Namespace,
-) -> tuple[MeanPooledResNetHead, np.ndarray, dict]:
+) -> tuple[MeanPooledResNetHead, np.ndarray, np.ndarray, dict]:
     torch.manual_seed(args.seed)
     model = MeanPooledResNetHead(embedding_dim=X_train.shape[-1])
     optimizer = torch.optim.AdamW(model.parameters(), lr=args.lr, weight_decay=1e-3)
@@ -78,8 +81,18 @@ def train_one_fold(
     model.load_state_dict(best_state)
     model.eval()
     with torch.no_grad():
-        pred = model(X_val_t).argmax(dim=1).cpu().numpy()
-    return model, pred, {"best_epoch": best_epoch, "best_macro_f1": best_macro_f1}
+        logits = model(X_val_t)
+        pred = logits.argmax(dim=1).cpu().numpy()
+    return model, pred, logits.cpu().numpy(), {"best_epoch": best_epoch, "best_macro_f1": best_macro_f1}
+
+
+def add_logits_and_probabilities(pred_df: pd.DataFrame, logits: np.ndarray) -> pd.DataFrame:
+    probabilities = torch.softmax(torch.tensor(logits, dtype=torch.float32), dim=1).numpy()
+    for idx, label in enumerate(LABEL_COLUMNS):
+        pred_df[f"logit_{label}"] = logits[:, idx]
+        pred_df[f"prob_{label}"] = probabilities[:, idx]
+    pred_df["prediction_confidence"] = probabilities.max(axis=1)
+    return pred_df
 
 
 def main() -> None:
@@ -104,11 +117,12 @@ def main() -> None:
         train_idx = df.loc[train_rows, "feature_idx"].to_numpy(dtype=int)
         val_idx = df.loc[val_rows, "feature_idx"].to_numpy(dtype=int)
 
-        _, pred, details = train_one_fold(X_all[train_idx], y_all[train_rows], X_all[val_idx], y_all[val_rows], args)
+        _, pred, logits, details = train_one_fold(X_all[train_idx], y_all[train_rows], X_all[val_idx], y_all[val_rows], args)
         fold_details[str(fold)] = details
         pred_df = df.loc[val_rows, ["video_id", "risk_level", "label_id", "fold"]].copy()
         pred_df["pred_label_id"] = pred
         pred_df["pred_risk_level"] = [ID_TO_LABEL[int(p)] for p in pred]
+        pred_df = add_logits_and_probabilities(pred_df, logits)
         all_predictions.append(pred_df)
 
     predictions = pd.concat(all_predictions, ignore_index=True)
@@ -125,7 +139,7 @@ def main() -> None:
     final_args = copy.copy(args)
     final_args.epochs = max(10, min(args.epochs, int(np.mean([d["best_epoch"] for d in fold_details.values()])) + 1))
     all_idx = df["feature_idx"].to_numpy(dtype=int)
-    final_model, _, _ = train_one_fold(X_all[all_idx], y_all, X_all[all_idx], y_all, final_args)
+    final_model, _, _, _ = train_one_fold(X_all[all_idx], y_all, X_all[all_idx], y_all, final_args)
     torch.save(
         {"model_state": final_model.state_dict(), "label_order": list(ID_TO_LABEL.values()), "feature_config": bundle.get("config", {})},
         output_dir / "final_head.pt",

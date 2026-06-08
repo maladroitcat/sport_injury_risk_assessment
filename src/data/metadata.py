@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from pathlib import Path
 
 import pandas as pd
@@ -17,6 +15,24 @@ METADATA_COLUMNS = [
     "player_down",
     "risk_level",
 ]
+
+VIDEO_EXTENSIONS = [".mov", ".mp4", ".avi", ".mkv", ".m4v"]
+
+
+def resolve_video_path(video_dir: Path, video_id: str) -> Path:
+    """Resolve a video file by ID across supported video extensions."""
+    for suffix in VIDEO_EXTENSIONS:
+        candidate = video_dir / f"{video_id}{suffix}"
+        if candidate.exists():
+            return candidate
+
+    lower_video_id = video_id.lower()
+    for suffix in VIDEO_EXTENSIONS:
+        candidate = video_dir / f"{lower_video_id}{suffix}"
+        if candidate.exists():
+            return candidate
+
+    return video_dir / f"{video_id}{VIDEO_EXTENSIONS[0]}"
 
 
 def load_metadata(
@@ -42,7 +58,7 @@ def load_metadata(
     if invalid_labels:
         raise ValueError(f"Unexpected risk labels: {invalid_labels}")
 
-    df["video_path"] = df["video_id"].map(lambda vid: str(video_dir / f"{vid}.mov"))
+    df["video_path"] = df["video_id"].map(lambda vid: str(resolve_video_path(video_dir, vid)))
     missing_files = df.loc[~df["video_path"].map(lambda p: Path(p).exists()), "video_path"]
     if not missing_files.empty:
         sample = missing_files.head(10).tolist()

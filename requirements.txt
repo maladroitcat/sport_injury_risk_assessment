@@ -1,0 +1,16 @@
+numpy
+pandas
+scikit-learn
+scikit-image
+opencv-python-headless
+Pillow
+matplotlib
+seaborn
+joblib
+tqdm
+torch
+torchvision
+notebook
+fastapi
+uvicorn[standard]
+python-multipart

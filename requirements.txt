@@ -2,7 +2,7 @@ numpy
 pandas
 scikit-learn
 scikit-image
-opencv-python
+opencv-python-headless
 Pillow
 matplotlib
 seaborn
@@ -11,3 +11,6 @@ tqdm
 torch
 torchvision
 notebook
+fastapi
+uvicorn[standard]
+python-multipart

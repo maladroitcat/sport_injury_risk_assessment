@@ -1,0 +1,38 @@
+{
+  "model_version": "resnet50_mild_blur_4f",
+  "model_type": "frozen_resnet50_temporal_head",
+  "model_artifact": "final_head.pt",
+  "label_order": ["low", "moderate", "high"],
+  "num_classes": 3,
+  "input": {
+    "num_frames": 4,
+    "frame_sampling": "evenly_spaced_full_video",
+    "color_mode": "rgb",
+    "light_transform": "mild_blur",
+    "resnet_preprocessing": "torchvision ResNet50_Weights.DEFAULT.transforms"
+  },
+  "feature_extractor": {
+    "backbone": "resnet50",
+    "weights": "ResNet50_Weights.DEFAULT",
+    "frozen": true,
+    "embedding_dim": 2048
+  },
+  "temporal_head": {
+    "architecture": "mean_pool_frame_embeddings_then_mlp",
+    "hidden_dim": 256,
+    "dropout": 0.25
+  },
+  "output": {
+    "prediction_rule": "argmax_softmax_probability",
+    "fields": [
+      "risk_level",
+      "confidence",
+      "probabilities",
+      "logits",
+      "model_version"
+    ]
+  },
+  "notes": {
+    "feature_cache": "resnet50_mild_blur_4f.joblib contains cached embeddings for the training/evaluation videos and is not required for live uploaded-video inference."
+  }
+}

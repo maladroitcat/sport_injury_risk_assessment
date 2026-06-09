@@ -1,0 +1,50 @@
+{
+  "model_version": "classical_hog_motion_svm_16f",
+  "model_type": "classical_cv_linear_svm",
+  "model_artifact": "best_model.joblib",
+  "label_order": ["low", "moderate", "high"],
+  "num_classes": 3,
+  "input": {
+    "num_frames": 16,
+    "frame_sampling": "evenly_spaced_full_video",
+    "resize": {
+      "height": 128,
+      "width": 128
+    },
+    "color_mode": "grayscale",
+    "contrast_normalize": false
+  },
+  "feature_extractor": {
+    "feature_type": "hog_motion",
+    "implementation": "src.features.classical.extract_classical_features",
+    "frame_preprocessing": [
+      "sample_video_frames",
+      "to_grayscale"
+    ]
+  },
+  "classifier": {
+    "estimator": "sklearn.pipeline.Pipeline",
+    "steps": [
+      {
+        "name": "scaler",
+        "estimator": "sklearn.preprocessing.StandardScaler"
+      },
+      {
+        "name": "model",
+        "estimator": "sklearn.svm.LinearSVC",
+        "class_weight": "balanced",
+        "random_state": 42,
+        "max_iter": 5000
+      }
+    ]
+  },
+  "output": {
+    "prediction_rule": "argmax_decision_function",
+    "native_probabilities": false,
+    "fields": [
+      "risk_level",
+      "decision_scores",
+      "model_version"
+    ]
+  }
+}

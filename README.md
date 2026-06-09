@@ -110,6 +110,44 @@ python scripts/export_error_analysis.py \
 
 Outputs are written under `artifacts/error_analysis/`.
 
+## Local API + UI
+
+Run the FastAPI model backend from this repository:
+
+```bash
+conda run -n cv-project uvicorn api.main:app --host 127.0.0.1 --port 8000
+```
+
+The backend exposes:
+
+- `GET /health`
+- `GET /models`
+- `POST /predict`
+
+`POST /predict` accepts multipart form data with:
+
+- `video`: `.mp4` or `.mov`
+- `sport`: `hockey`, `basketball`, `soccer`, `football`, or `rugby`
+- `impact_type`: `collision`, `object_hit`, `fall`, or `twist`
+- `body_region`: `head_face`, `upper_body`, or `lower_body`
+- `model_version`: optional model selection, defaults to `resnet50_mild_blur_4f`
+
+Uploaded clips are limited to 250 MB by default. Override with `MAX_UPLOAD_BYTES` if needed.
+
+Deployment model artifacts live under `model_artifacts/`. The default model is `resnet50_mild_blur_4f`; the selectable alternatives are `classical_hog_motion_svm_16f` and the `baseline_moderate` no-inference baseline.
+
+Run the separate Next.js UI from `/Users/yiqian/src/injury-risk-ui`:
+
+```bash
+npm run dev
+```
+
+For local testing, set `/Users/yiqian/src/injury-risk-ui/.env.local`:
+
+```bash
+NEXT_PUBLIC_API_URL=http://127.0.0.1:8000
+```
+
 ## Notebooks
 
 The `notebooks/` folder contains report-friendly exploratory views:

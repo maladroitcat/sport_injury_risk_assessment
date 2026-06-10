@@ -1,0 +1,16 @@
+.git
+.gitignore
+.DS_Store
+__pycache__
+*.pyc
+.pytest_cache
+
+data
+artifacts
+notebooks
+scripts
+env
+.venv
+venv
+
+README.md
